@@ -10,6 +10,22 @@
 
 #define ALIGN (sizeof(struct { char a; char *b; }) - sizeof(char *))
 
+/* ****************************************************
+3C Bounds Inference:  
+Patterns present here that we might use as heuristics: 
+Usage of pointer parameter in some funky pointer arithmetic 
+and involvement of extra parameter indicating length 
+(buf += align)
+
+Solution: 
+Change original parameter to something else that allows it
+to retain buflen as its length so that all the funky pointer 
+arithmetic is handled elswhere 
+
+Exact same problem and solution as gethostbyaddr_r.c 
+and gethostbyname2_r.c
+**************************************************** */
+
 int getservbyname_r(const char *name, const char *prots,
 	struct servent *se, char *buf, size_t buflen, struct servent **res)
 {
@@ -24,6 +40,10 @@ int getservbyname_r(const char *name, const char *prots,
 	if (!*end) return ENOENT;
 
 	/* Align buffer */
+	// SOLUTION 
+	/* 
+	_Array_ptr<char> buf : bounds(buf_ori, buf_ori + buflen) = buf_ori; 
+	*/
 	align = -(uintptr_t)buf & ALIGN-1;
 	if (buflen < 2*sizeof(char *)+align)
 		return ERANGE;
@@ -53,3 +73,52 @@ int getservbyname_r(const char *name, const char *prots,
 	*res = se;
 	return 0;
 }
+// FULL SOLUTION: 
+/*
+int getservbyname_r(const char *name : itype(_Nt_array_ptr<const char>),
+	const char *prots : itype(_Nt_array_ptr<const char>),
+	struct servent *se : itype(_Ptr<struct servent>),
+	char *buf_ori : count(buflen),
+	size_t buflen,
+	struct servent **res : itype(_Ptr<_Ptr<struct servent>>))
+{
+	struct service servs[MAXSERVS];
+	int cnt, proto, align;
+
+	*res = 0;
+
+	char *end = "";
+	strtoul(name, &end, 10);
+	if (!*end) return ENOENT;
+
+	_Array_ptr<char> buf : bounds(buf_ori, buf_ori + buflen) = buf_ori;
+	align = -(uintptr_t)buf & ALIGN-1;
+	if (buflen < 2*sizeof(char *)+align)
+		return ERANGE;
+	buf += align;
+
+	if (!prots) proto = 0;
+	else if (!strcmp(prots, "tcp")) proto = IPPROTO_TCP;
+	else if (!strcmp(prots, "udp")) proto = IPPROTO_UDP;
+	else return EINVAL;
+
+	cnt = __lookup_serv(servs, name, proto, 0, 0);
+	if (cnt<0) switch (cnt) {
+	case EAI_MEMORY:
+	case EAI_SYSTEM:
+		return ENOMEM;
+	default:
+		return ENOENT;
+	}
+
+	se->s_name = (char *)name;
+	se->s_aliases = (void *)buf;
+	se->s_aliases[0] = se->s_name;
+	se->s_aliases[1] = 0;
+	se->s_port = htons(servs[0].port);
+	se->s_proto = servs[0].proto == IPPROTO_TCP ? "tcp" : "udp";
+
+	*res = se;
+	return 0;
+} 
+*/

@@ -1,0 +1,91 @@
+Files to Look at 
+
+This documents all instances of the array bounds inference changes made by Yahui on the checkedc-musl repository in the src/network directory. 
+
+You can toggle between the “pre-conversion” and “post-conversion” versions of the code by simply changing the branch from master to baseline_0629
+
+---------------
+List of Processed Files w/ Bounds Analysis Stuff in it!
+---------------
+dn_comp.c   
+dn_expand.c 
+gethostbyaddr_r.c
+gethostbyname2_r.c
+getservbyname_r.c
+getservbyport_r.c 
+inet_aton.c
+inet_pton.c
+sendmmsg.c
+
+---------------
+List of Processed Files
+--------------- 
+dn_comp.c   
+dn_expand.c 
+gethostbyaddr_r.c
+gethostbyname2_r.c
+getservbyname_r.c
+getservbyport_r.c 
+inet_aton.c
+inet_pton.c
+sendmmsg.c
+gethostbyname2.c  
+dn_skipname.c  
+gethostbyname_r.c
+getifaddrs.c 
+getpeername.c
+getservbyname.c
+getservbyport.c
+getsockname.c
+getsockopt.c
+if_nameindex.c
+inet_addr.c
+inet_legacy.c 
+inet_ntoa.c 
+inet_ntop.c 
+lookup.h 
+recv.c
+recvfrom.c
+recvmmsg.c
+recvmsg.c 
+res_msend.c 
+res_query.c
+res_querydomain.c
+send.c 
+sendmsg.c
+sendto.c 
+ns_parse.c 
+res_mkquery.c      
+res_send.c
+
+---------------
+To Process List
+---------------
+All done!
+
+CATEGORIES: 
+---------------
+Temp and widener 
+---------------
+dn_comp.c 
+inet_aton.c (?)
+inet_pton.c 
+
+---------------
+Avoiding funky pointer arithmetic by using ori 
+---------------
+gethostbyaddr_r.c
+gethostbyname2_r.c
+getservbyname_r.c
+getservbyport_r.c
+sendmmsg.c (?)   
+
+---------------
+Experimental (examine but no guarantees of usefulness)
+---------------
+ns_parse.c 
+res_mkquery.c // an example of a file that contains no triggers or 
+              // heuristics to consider, can just be converted without
+              // a second thought, but useful for array bounds inf.      
+res_send.c  // support for Aravind's array bounds heuristics. 
+

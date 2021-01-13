@@ -77,9 +77,34 @@ bad:
 	return -1;
 }
 
+/* 
+Author's note: This whole file (and some others) are kind of mysterious 
+Some of the heuristics that I mention in other files (such as pointer arithmetic
+occuring within a loop) happen in this file 
+EX. p += r, and yet Yahui didn't have to do much finangling. Potentially the
+reason is because the compiler is somehow smart enough to figure things out
+or because we don't particulary care about the local variable p as much 
+as we might care about the paramter *ptr
+
+So, I'm going to create a new branch of files called experimental. What we might
+want to do is try to convert these by-hand in different ways to try and 
+unpack exactly why and how these conversions occur. 
+Author's note again: I think the real reason Yahui was able to convert 
+was because of a line of reasoning involving the argument 
+eom that may be nontrivial to automate. I remember in a correspondence
+I had with Yahui, that he often recommended giving things a bound of 0
+and having the compiler fill in the rest as it considers the program, 
+but he didn't go into specifics, so I am uncertain if the reasoning
+behind the bounds annotation in comments below is his reasoning or the
+compiler's 
+
+*/
 int ns_skiprr(const unsigned char *ptr, const unsigned char *eom, ns_sect section, int count)
 {
-	const unsigned char *p = ptr;
+	const unsigned char *p = ptr; 
+	/* 
+	_Array_ptr<const unsigned char> p : bounds(ptr, eom) = ptr; 
+	*/
 	int r;
 
 	while (count--) {
@@ -91,7 +116,12 @@ int ns_skiprr(const unsigned char *ptr, const unsigned char *eom, ns_sect sectio
 			if (NS_INT32SZ + NS_INT16SZ > eom - p) goto bad;
 			p += NS_INT32SZ;
 			NS_GET16(r, p);
-			if (r > eom - p) goto bad;
+			if (r > eom - p) goto bad; 
+			// This is the line of reasoning: p's outer bound has to 
+			// eom because we haven't gotten to bad yet. 
+			// At the very least, r has to be 0, which means we 
+			// at the limit, r > eom - p means eom has to be equal to p
+			// and does not go any further. 
 			p += r;
 		}
 	}
